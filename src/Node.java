@@ -4,7 +4,7 @@
  * @author niehusst
  *
  */
-public class Node {
+public class Node implements Comparable {
 	private Integer freq;
 	private Node left;
 	private Node right;
@@ -83,11 +83,26 @@ public class Node {
 	 * @param bin - a binary number (0 or 1). 0 indicates left, 1 indicates right
 	 * @return - a Node, either left or right
 	 */
-	public Node getDirection(byte bin) {
+	public Node getDirection(int bin) {
 		if(bin == 1) {
 			return this.getRight();
 		} else {
 			return this.getLeft();
+		}
+	}
+
+	/**
+	 * helps with comparing Node objects to put them into a PriorityQueue
+	 */
+	@Override
+	public int compareTo(Object o) {
+		Node compare = (Node) o;
+		if(this.getFreq() < compare.getFreq()) {
+			return -1;
+		} else if(this.getFreq() > compare.getFreq()) {
+			return 1;
+		} else {
+			return 0;
 		}
 	}
 }

@@ -1,13 +1,12 @@
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
-import java.io.*;
-import java.lang.*;
 
 public class HuffmanTree {
 	
 	private PriorityQueue<Node> huffQueue;
+	private Map<Short, String> code;
+	private Node root;
 	
 	/**
 	 * creates a HuffmanTree from an input Map object that contains data, and the frequency of that data
@@ -15,6 +14,8 @@ public class HuffmanTree {
 	 * @param map - a Map from data to its frequency
 	 */
 	public HuffmanTree(Map<Short, Integer> map) {
+		huffQueue = new PriorityQueue<>();
+		
 		//turn map contents into Nodes and add to priority queue
 		for(Map.Entry<Short, Integer> entry : map.entrySet()) {
 			Node leaf = new Node(entry.getKey(), entry.getValue());
@@ -28,18 +29,21 @@ public class HuffmanTree {
 			Node inner = new Node(huffQueue.poll(), huffQueue.poll());
 			huffQueue.add(inner);
 		}
+		this.root = huffQueue.poll();
 	}
 	
 	/**
 	 * construct a HuffmanTree from an input stream of a Huffman compressed file
+	 * 
 	 * @param in - stream from compressed file
 	 */
 	public HuffmanTree(BitInputStream in) {
 		huffQueue.add(HuffmanTreeH(in));	
+		this.root = huffQueue.poll();
 	}
 	
 	 /**
-	  * helper to the input stream constructor
+	  * helper to the input stream Huffman constructor
 	  * @param in - stream from compressed file
 	  * @return - a Node that is to be inserted into the HuffmanTree
 	  */
@@ -63,6 +67,12 @@ public class HuffmanTree {
 		return null;
 	}
 	
+	/**
+	 * helper for the serialize function. Recursively writes the data
+	 * about the HuffmanTree to out
+	 * @param out - the stream to write to
+	 * @param cur - the current node in the tree
+	 */
 	private void serializeH(BitOutputStream out, Node cur) {
 		if (cur.isLeaf()) {
 			out.writeBit(0);
@@ -74,34 +84,91 @@ public class HuffmanTree {
 		}
 	}
 	
+	/**
+	 * serialize the HuffmanTree, writing its structure to out
+	 * @param out - target stream 
+	 */
 	public void serialize(BitOutputStream out) {
-		Node cur = huffQueue.peek();
+		Node cur = root;
 		serializeH(out, cur);
 	}
 	
+	/**
+	 * encode all data from in, and write compressed data to out
+	 * 
+	 * @param in - uncompressed source stream
+	 * @param out - target compressed stream
+	 */
 	public void encode(BitInputStream in, BitOutputStream out) {
 		//first write the tree we are using to target
 		this.serialize(out);
 		//get the code for the data in Huffman tree and put in Hashmap
-		Node cur = huffQueue.peek();
-		Map<Short, ArrayList<Byte>> code = new HashMap<>();
-		ArrayList<Byte> path = new ArrayList<>();
-		encodeH(cur, path, code);
-	}
-	
-	//find all path codes and put into a map
-	private void encodeH(Node cur, ArrayList<Byte> path, Map<Short, ArrayList<Byte>> code) {
+		Node cur = root;
+		this.code = new HashMap<>();
+		String path = "";
+		findAllCodes(cur, path, code);
 		
-		if(cur.isLeaf()) {
-			//add path data pair to code map. Then clear path for next leaf??
-			code.put(cur.getData(), path);
-		} else {
-			//record the path taken in path list
-			path.add((byte) 0);
-			encodeH(cur.getLeft(), path, code);
-			path.add((byte) 1);
-			encodeH(cur.getLeft(), path, code);			
+		//encode the data from in
+		short data;
+		while((data = (short) in.readBits(8)) != -1) {
+			for(int i = 0; i < code.get(data).length(); i++) {
+				//write the path for the next character from 'in' bit by bit
+				out.writeBit(code.get(data).charAt(i));
+			}
 		}
 	}
+	
+	/**
+	 * find all path codes for this HuffmanTree and put into a code.
+	 * 
+	 * @param cur - current node in HuffmanTree
+	 * @param path - the list of bits that represents the path (and code) to a certain leaf
+	 * @param code - the mapping of all values in HuffmanTree to their Huffman codes
+	 */
+	private void findAllCodes(Node cur, String path, Map<Short, String> code) {
+		if(cur.isLeaf()) {
+			//add path data pair to code map. Then clear path for next leaf??
+			code.put(cur.getData(), path);             
+		} else {
+			//record the path taken into path list and recurse
+			findAllCodes(cur.getLeft(), path + "0", code);
+			findAllCodes(cur.getRight(), path + "1", code);			
+		}
+	}
+	
+	/**
+	 * read compressed data from a stream, and using HuffmanTree, decompress
+	 * it and write data to target stream out
+	 * 
+	 * @param in - a Huffman encoded stream
+	 * @param out - the stream to write decoded values to
+	 */
+	public void decode(BitInputStream in, BitOutputStream out) {
+		int bit;
+		Node cur = root;
+		while((bit = in.readBit()) != -1) {
+			decodeH(in, out, cur.getDirection(bit));
+		}
+	}
+	
+	/**
+	 * helper for decode. Handles traversal of HuffmanTree to correct LeafNode
+	 * and writing the data at that leaf
+	 *  
+	 * @param in - source stream of compressed data
+	 * @param out - target stream to write decompressed data to
+	 * @param cur - current node of Huffman tree
+	 */
+	private void decodeH(BitInputStream in, BitOutputStream out, Node cur) {
+		if (cur.isLeaf() && cur.getData() != 256) {		
+			out.writeBits(cur.getData(), 8);
+			return;
+		} else {
+			int bit = in.readBit();
+			decodeH(in, out, cur.getDirection(bit));
+		}
+	}
+	
+
 
 }
