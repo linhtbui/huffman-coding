@@ -4,7 +4,7 @@
  * @author niehusst
  *
  */
-public class Node implements Comparable {
+public class Node implements Comparable<Node> {
 	private Integer freq;
 	private Node left;
 	private Node right;
@@ -95,7 +95,7 @@ public class Node implements Comparable {
 	 * helps with comparing Node objects to put them into a PriorityQueue
 	 */
 	@Override
-	public int compareTo(Object o) {
+	public int compareTo(Node o) {
 		Node compare = (Node) o;
 		if(this.getFreq() < compare.getFreq()) {
 			return -1;

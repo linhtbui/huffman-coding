@@ -2,15 +2,24 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 
+/**
+ * a class that creates a HuffmanTree from either a Huffman compressed .grin file,
+ * or from a Map of the frequencies of characters in a file. Using that HuffmanTree,
+ * encoding and decoding can be performed on files.
+ * 
+ * @author niehusst
+ * @author builinh
+ */
 public class HuffmanTree {
 	
 	private PriorityQueue<Node> huffQueue;
 	private Map<Short, String> code;
-	private Node root;
+	public Node root;
 	
 	/**
 	 * creates a HuffmanTree from an input Map object that contains data, and the frequency of that data
 	 * from the target that is to be compressed.
+	 * 
 	 * @param map - a Map from data to its frequency
 	 */
 	public HuffmanTree(Map<Short, Integer> map) {
@@ -38,12 +47,14 @@ public class HuffmanTree {
 	 * @param in - stream from compressed file
 	 */
 	public HuffmanTree(BitInputStream in) {
+		huffQueue = new PriorityQueue<>();
 		huffQueue.add(HuffmanTreeH(in));	
 		this.root = huffQueue.poll();
 	}
 	
 	 /**
-	  * helper to the input stream Huffman constructor
+	  * helper to the input stream HuffmanTree constructor
+	  * 
 	  * @param in - stream from compressed file
 	  * @return - a Node that is to be inserted into the HuffmanTree
 	  */
@@ -70,6 +81,7 @@ public class HuffmanTree {
 	/**
 	 * helper for the serialize function. Recursively writes the data
 	 * about the HuffmanTree to out
+	 * 
 	 * @param out - the stream to write to
 	 * @param cur - the current node in the tree
 	 */
@@ -86,6 +98,7 @@ public class HuffmanTree {
 	
 	/**
 	 * serialize the HuffmanTree, writing its structure to out
+	 * 
 	 * @param out - target stream 
 	 */
 	public void serialize(BitOutputStream out) {
@@ -113,7 +126,11 @@ public class HuffmanTree {
 		while((data = (short) in.readBits(8)) != -1) {
 			for(int i = 0; i < code.get(data).length(); i++) {
 				//write the path for the next character from 'in' bit by bit
-				out.writeBit(code.get(data).charAt(i));
+				if (code.get(data).charAt(i) == '0') {
+					out.writeBit(0);
+				} else {
+					out.writeBit(1);
+				}
 			}
 		}
 	}
@@ -146,6 +163,7 @@ public class HuffmanTree {
 	public void decode(BitInputStream in, BitOutputStream out) {
 		int bit;
 		Node cur = root;
+		
 		while((bit = in.readBit()) != -1) {
 			decodeH(in, out, cur.getDirection(bit));
 		}
@@ -157,11 +175,12 @@ public class HuffmanTree {
 	 *  
 	 * @param in - source stream of compressed data
 	 * @param out - target stream to write decompressed data to
-	 * @param cur - current node of Huffman tree
 	 */
 	private void decodeH(BitInputStream in, BitOutputStream out, Node cur) {
-		if (cur.isLeaf() && cur.getData() != 256) {		
-			out.writeBits(cur.getData(), 8);
+		if (cur.isLeaf()) {	
+			if (cur.getData() != 256) {
+				out.writeBits(cur.getData(), 8);
+			}
 			return;
 		} else {
 			int bit = in.readBit();
