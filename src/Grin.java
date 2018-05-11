@@ -86,7 +86,8 @@ public class Grin {
 	}
 	
 	/**
-	 * the main function; reads command line input and performs user chosen commands
+	 * the main function; reads command line input and performs user chosen commands.
+	 * Also handles errors, should any exceptions be thrown.
 	 * 
 	 * @param args - command line input
 	 */

@@ -120,19 +120,25 @@ public class HuffmanTree {
 		this.code = new HashMap<>();
 		String path = "";
 		findAllCodes(cur, path, code);
-		
+
 		//encode the data from in
 		short data;
-		while((data = (short) in.readBits(8)) != -1) {
+		while(in.hasBits()) {
+			data = (short) in.readBits(8);
+			String DEBUG = "";
 			for(int i = 0; i < code.get(data).length(); i++) {
 				//write the path for the next character from 'in' bit by bit
 				if (code.get(data).charAt(i) == '0') {
 					out.writeBit(0);
+					DEBUG += "0";
 				} else {
 					out.writeBit(1);
+					DEBUG += "1";
 				}
 			}
+			System.out.println(data + " : " + DEBUG);
 		}
+		
 	}
 	
 	/**
@@ -163,28 +169,32 @@ public class HuffmanTree {
 	public void decode(BitInputStream in, BitOutputStream out) {
 		int bit;
 		Node cur = root;
-		
-		while((bit = in.readBit()) != -1) {
-			decodeH(in, out, cur.getDirection(bit));
+		//flag to indicate eof return value of decodeH. if 1, eof is reached
+		Boolean flag = true;
+		while((bit = in.readBit()) != -1 && flag) {
+			flag = decodeH(in, out, cur.getDirection(bit));
 		}
+
 	}
 	
 	/**
 	 * helper for decode. Handles traversal of HuffmanTree to correct LeafNode
-	 * and writing the data at that leaf
+	 * and writing the data at that leaf. Return value indicates eof
 	 *  
 	 * @param in - source stream of compressed data
 	 * @param out - target stream to write decompressed data to
+	 * @return - returns 1 if eof was reached, otherwise returns 0
 	 */
-	private void decodeH(BitInputStream in, BitOutputStream out, Node cur) {
+	private boolean decodeH(BitInputStream in, BitOutputStream out, Node cur) {
 		if (cur.isLeaf()) {	
 			if (cur.getData() != 256) {
 				out.writeBits(cur.getData(), 8);
+				return true;
 			}
-			return;
+			return false;
 		} else {
 			int bit = in.readBit();
-			decodeH(in, out, cur.getDirection(bit));
+			return decodeH(in, out, cur.getDirection(bit));
 		}
 	}
 	
