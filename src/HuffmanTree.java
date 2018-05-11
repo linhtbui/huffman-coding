@@ -125,18 +125,18 @@ public class HuffmanTree {
 		short data;
 		while(in.hasBits()) {
 			data = (short) in.readBits(8);
-			String DEBUG = "";
 			for(int i = 0; i < code.get(data).length(); i++) {
 				//write the path for the next character from 'in' bit by bit
 				if (code.get(data).charAt(i) == '0') {
 					out.writeBit(0);
-					DEBUG += "0";
 				} else {
 					out.writeBit(1);
-					DEBUG += "1";
 				}
 			}
-			System.out.println(data + " : " + DEBUG);
+		}
+		String eof = this.code.get((short) 256);
+		for (int i = 0; i < eof.length(); i++) {
+			out.writeBit(eof.charAt(i) - 48);
 		}
 		
 	}
